@@ -87,3 +87,95 @@ docker run -d --name meu-nginx-web -p 80:80 meu-nginx-customizado
 
 ## Processo feito, foi só entrar no navegador e ver o resultado:
 ![Resultado](imagens/exercicio_02_02.png)
+
+---
+
+### 3. Iniciar um container da imagem ubuntu com um terminal interativo (bash). Navegue pelo sistema de arquivos e instale o pacote curl utilizando apt.
+
+## 3.1 iniciando o Ubunto interativo:
+* A primeira coisa é utilizar o seguinte comando no terminal:
+```bash
+docker run -it ubuntu bash
+```
+* ``-it`` é uma combinação de duas flags:
+    * ``-i``(interactive) Mantém o STDIN aberto mesmo se não estiver anexado.
+    * ``-t``(tty) Aloca um pseudo-TTY. O que permite ter uma experiência de um terminal iterativo.
+
+* ``Ubuntu`` : É a imagem que o docker vai usar nesse caso.
+* ``bash``: É o comando que será executado dentro do container assim que ele iniciar, isso faz abrir um terminal bash  dentro do container.
+
+Após a execução do comando o ``prompt de comando`` ficou assim:
+
+![Prompt_para_bash](imagens/exercicio_03_01.png)
+
+A linha final escrita ``root@7dd8e6fa9ee4:/#`` indica que já estamos dentro do terminal do container ``Ubuntu``.
+
+## 3.2 - instalando o pacote curl
+Antes de instalar qualquer pacote com o comando ``apt``, a boa prática é sempre atualizar a lista de pacotes para garantir que a instalação sera feita nas versoes mais recentes do sistema.
+* utilizaza o comando:
+```bash
+apt update
+```
+o resultado após esse comando é:
+
+![POS_APT_UPDATE](imagens/exercicio_03_02.png)
+
+a ultima linha indicando ``ALL packages are up to date.`` indica que as atualizações foram realizadas.
+
+Após isso podemos instalar o ``curl`` com o comando:
+
+```bash
+apt install curl -y
+```
+* ``-y``: Responde automaticamente "sim" a quaisquer prompts de confirmação necessários na instalação.
+
+Após a conclusão da instalação, o ``curl`` estará disponível ddentro do container. O ideal é verificar a instalação com o comando:
+```bash
+curl --version
+```
+* ``--version``: Verifica a existência do pacote instalado e sua versão.
+
+O resultado confirmando a instalação é o seguinte:
+
+![RESULTADO_CURL_INSTALADO](imagens/exercicio_03_03.png)
+
+Com isso finaliza a realização do exercício proposto.
+
+---
+
+### 4. Suba um container do MySQL (pode usar a imagem mysql:5.7), utilizando um volume nomeado para armazenar os dados. Crie um banco de dados, pare o container, suba novamente e verifique se os dados persistem.
+
+## 4.1 Subir o Container MySQL com um volume nomeado
+* Criando um volume nomeado: pesquisando descobri que ``volumes nomeados`` são a forma preferencial de persistir dados no ``Docker``, porque são gerenciados pelo mesmo e são faceis de se fazer backup e migrar.
+O comando utilizado foi:
+```bash
+docker volume create mysql_data_volume
+```
+isso criou um volume chamado ``mysql_data_volume``
+
+![DATA_VOLUME_CONFIRM](imagens/exercicio_04_01.png)
+
+* O próximo passo foi iniciar o Cainter MySQL, montando o volume nomeado e definindo uma senha para o usuário ``root``:
+```bash
+docker run -d `
+  --name meu_mysql_bd `
+  -p 3306:3306 `
+  -e MYSQL_ROOT_PASSWORD=minhasenha `
+  -v mysql_data_volume:/var/lib/mysql `
+  mysql:5.7
+```
+* ``-d``: executa o container em segundo plano.
+* ``--name meu_mysql_bd``: atribui um nome  ao container.
+* ``-p 3306:3306``: mapeia a porta 3306 do host para a porta 3006 do container.
+* ``-e MYSQL_ROOT_PASSWORD=minhasenha``: define a senha do usuário ``root`` do MySQL(O ideal seria substituir o campo ``minhasenha`` por uma senha forte, mas como é somente um exercício deixei assim para facilitar.)
+* ``-v mysql_data_volume:/var/lib/mysql``: monta o volume nomeado ``mysql_data_volume`` dentro do diretório ``/var/lib/mysql`` dentro do container, aonde o MySQL armazena seus dados.
+* ``mysql:5.7`` indica a imagen MySQL a ser utilizada pelo docker.
+
+após isso verifiquei se a imagem estava criada com o comando:
+```bash
+docker images
+```
+e pude verificar q estava criada com a versão correta:
+
+![CONFIRMA_MYSQL](imagens/exercicio_04_02.png)
+
