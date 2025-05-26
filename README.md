@@ -281,3 +281,110 @@ E observei se o resultado era o esperado:
 ![RESULTADO](imagens/exercicio_05_02.png)
 
 Tudo certo como esperado!
+
+---
+### 6. Utilize um multi-stage build para otimizar uma aplicação Go, reduzindo o tamanho da imagem final. Utilize para praticar o projeto [GS PING](https://github.com/docker/docker-gs-ping) desenvolvido em Golang.
+
+## 6.1 Clonando o repositório
+* Fiz um ``git clone`` para clonar o repositório em questão:
+
+```Bash
+git clone https://github.com/docker/docker-gs-ping.git
+```
+
+Dentro do diretório em questão já havia um ``Dockerfile`` que estava da seguinte forma:
+
+```Dockerfile
+# syntax=docker/dockerfile:1
+
+FROM golang:1.19
+
+# Set destination for COPY
+WORKDIR /app
+
+# Download Go modules
+COPY go.mod go.sum ./
+RUN go mod download
+
+# Copy the source code. Note the slash at the end, as explained in
+# https://docs.docker.com/engine/reference/builder/#copy
+COPY *.go ./
+
+# Build
+RUN CGO_ENABLED=0 GOOS=linux go build -o /docker-gs-ping
+
+# To bind to a TCP port, runtime parameters must be supplied to the docker command.
+# But we can (optionally) document in the Dockerfile what ports
+# the application is going to listen on by default.
+# https://docs.docker.com/engine/reference/builder/#expose
+EXPOSE 8080
+
+# Run
+CMD [ "/docker-gs-ping" ]
+
+```
+
+## 6.2 Alterando o dockerfile
+
+* Fiz algumas alterações no ``Dockerfile`` para ficar desta forma, e renomeei o antigo para ``dockerfileOLD``:
+
+```Dockerfile
+FROM golang:1.22 AS builder
+
+WORKDIR /app
+
+COPY go.mod go.sum ./
+
+RUN go mod download
+
+COPY . .
+
+RUN CGO_ENABLED=0 go build -o ping ./...
+
+FROM scratch
+
+WORKDIR /app
+
+COPY --from=builder /app/ping .
+
+EXPOSE 8080
+
+ENTRYPOINT ["./ping"]
+```
+
+* ``FROM golang:1.22 AS builder`` :Usa uma imagem ``Go`` de um tamanho suficiente para poder compilar a aplicação
+* ``WORKDIR`` :Define o diretório de trabalho dentro do container.
+* ``RUN go mod download`` :Baixa as dependências do ``Go``.
+* ``RUN CGO_ENABLED=0 go build -o ping ./...`` : Constroi o executável e cria um binário estaticamente linkado, sem dependências externas do ``C``. O ``-o ping`` define o nome do executável final como "ping". O ``./...`` compila todos os pacotes ``Go`` no diretório atual e subidiretórios.
+* ``FROM scratch`` : ``scratch`` é a imagem mais básica que não contém nada além do kernel do ``Linux``.
+* ``COPY --from=builder /app/ping .`` : Copia o executável ``ping`` do estágio ``builder`` para o estágio final.
+* ``EXPOSE 8080`` : Expõe a porta que a aplicação ``Go`` vai usar, em padrão.
+* ``ENTRYPOINT ["./ping"]`` : Define o comando que será executado quando o container iniciar.
+
+## 6.3 Construindo a imagem no docker
+
+* utilizei o seguinte comando para contrução da imagem:
+```Bash
+docker build -t go-ping-otimizado .
+```
+
+* Após a construção da imagem utilizei para verificar o tamanho da imagem o seguinte comando:
+
+```Bash
+docker images go-ping-otimizado
+```
+* O resultado foi uma imagem com menos de ``10MB`` :
+![IMAGENS_OTIMIZADAS_GO](imagens/exercicio_06_01.png)
+
+## 6.3 Executando o container da aplicação otimizada
+* Para executar o container utilizei o seguinte código:
+```Bash
+docker run -p 8080:8080 --name ping-app go-ping-otimizado
+```
+* Após a execução foi só abrir o navegador em http://localhost:8080 e conferir se estava tudo correto:
+
+    ![CONFERENCIA_EX_6](imagens/exercicio_06_02.png)
+
+Tudo certo!
+
+---
