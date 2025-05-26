@@ -179,3 +179,105 @@ e pude verificar q estava criada com a versão correta:
 
 ![CONFIRMA_MYSQL](imagens/exercicio_04_02.png)
 
+## 4.2 acessando o MySQL e criando um Banco de Dados
+
+* primeiro usei o cliente ``mysql`` que veio junto com a imagem do container
+```bash
+docker exec -it meu_mysql_bd mysql -u root -p
+```
+* ``docker exec -it meu_mysql_bd``:abre um terminal interativo no container ``meu_sql_bd``.
+* ``mysql -u root -p``: executa o cliente MySQL com o usuário ``root`` e solicita senha, no caso usei a senha ``minhasenha`` que eu tinha mencionado anterioromente.
+
+![MYSQL_TERMINAL](imagens/exercicio_04_03.png)
+
+* Após isso foi criar um banco de dados dentro do prompt MySQL:
+```SQL
+CREATE DATABASE meu_banco_de_dados;
+```
+E verifiquei se o banco de dados foi realmente criado
+```SQL
+SHOW DATABASES;
+```
+
+![BANCO_DE_DADOS_CRIADO](imagens/exercicio_04_04.png)
+
+Com o ``meu_banco_de_dados`` criado, foi só sair do cliente MySQL com o comando:
+```SQL
+exit;
+```
+## 4.3 parando o container
+* Aqui utilizei  a linha de código para parar o container MySQL:
+```Bash
+docker stop meu_mysql_bd
+```
+Isso parou o container, mas o volume nomeado ``mysql_data_volume`` e os dados dentro dele vão permanecer.
+
+* Verifiquei se o container foi realmente parado com o comando:
+```Bash
+docker ps -a
+```
+
+![Mysql_parado](imagens/exercicio_04_05.png)
+
+Ele está lá listado como ``Exited``, o que diz que foi parado.
+
+## 4.4 subindo o container de novo e verificando a persistencia dos dados
+
+* iniciei novamente o container MySQL:
+```Bash
+docker start meu_mysql_bd
+```
+
+Como o volume já tinha sido nomeado pude chamar direto pelo seu nome.
+
+* acessei o terminal do MySQL de novo:
+```Bash
+docker exec -it meu_mysql_bd mysql -u root -p
+```
+
+* dentro do prompt MySQL verifiquei se o banco de dados criado ainda existia:
+```SQL
+SHOW DATABASES;
+```
+
+![BANCO_DE_DADOS_PERSISTE](imagens/exercicio_04_06.png)
+
+Com isso deu pra constatar a persistencia do Banco de dados no container!
+
+---
+
+### 5. Crie um container com a imagem alpine passando uma variável de ambiente chamada MEU_NOME com seu nome. Execute o container e imprima o valor da variável com o comando echo.
+
+## 5.1 Criando o Dockerfile.
+Utilizei os seguintes parâmetros dentro do ``Dockerfile``:
+```Dockerfile
+FROM alpine:3.21.3
+
+ENV MEU_NOME="Bruno Duarte"
+
+CMD ["sh", "-c", "echo Olá, $MEU_NOME!"]
+```
+* ``ENV``
+: Define uma variável de ambiente padrão.
+## 5.2 Construindo a imagem Docker:
+* No terminal estando no mesmo diretório que eu salvei o ``Dockerfile`` utilizei a seguinte linha de código:
+```Bash
+docker build -t alpine-diz-nome .
+```
+* Em seguinda rodei um comando para verificar se a imagem foi criada:
+```Bash
+docker images
+```
+![IMAGEM_CRIADA](imagens/exercicio_05_01.png)
+
+## 5.3 Executando o container
+
+* Utilizei o comando:
+```Bash
+docker run --rm alpine-diz-nome
+```
+E observei se o resultado era o esperado:
+
+![RESULTADO](imagens/exercicio_05_02.png)
+
+Tudo certo como esperado!
