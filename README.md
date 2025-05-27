@@ -516,3 +516,136 @@ docker network inspect minha_rede_customizada
 Tudo certo!
 
 ---
+
+### 8. Utilize Docker Compose para configurar uma aplicação com um banco de dados PostgreSQL, use para isso o projeto https://github.com/docker/awesome-compose/tree/master/postgresql-pgadmin
+
+## 8.1 Clonando o repositório
+
+* Primeiro passo foi clonar o repositório e ir para a pasta destino:
+
+```Bash
+git clone https://github.com/docker/awesome-compose.git
+cd awesome-compose/postgresql-pgadmin
+```
+
+## 8.2 Analisando o compose.yaml
+
+* O arquivo compose.yml está dessa forma
+
+```YAML
+services:
+  postgres:
+    container_name: postgres
+    image: postgres:latest
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PW}
+      - POSTGRES_DB=${POSTGRES_DB} #optional (specify default database instead of $POSTGRES_DB)
+    ports:
+      - "5432:5432"
+    restart: always
+
+  pgadmin:
+    container_name: pgadmin
+    image: dpage/pgadmin4:latest
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=${PGADMIN_MAIL}
+      - PGADMIN_DEFAULT_PASSWORD=${PGADMIN_PW}
+    ports:
+      - "5050:80"
+    restart: always
+```
+
+* o arquivo está usando ``$VARIAVEIS_DE_AMBIENTE``, ao invés de usar valor fixos, com isso o ``Docker Compose`` procura automaticamente um arquivo ``.env`` no mesmo diretório, para poder carregar essa variáveis.
+
+## 8.3 Verificando e modificando o arquivo ".env"
+
+* O arquivo ``.env`` veioo dessa forma
+```Snippet
+POSTGRES_USER=yourUser
+POSTGRES_PW=changeit
+POSTGRES_DB=postgres
+PGADMIN_MAIL=your@email.com
+PGADMIN_PW=changeit
+```
+* preenchi com dados aleatórios por estar somente em ambiente de teste, mas o ideal em ambiente profissional é usar ``senhas fortes`` e ``e-mails`` que você realmente usa
+
+
+## 8.4 Incrementando o compose com volume para persistencia de dados
+
+* Adicionei algumas linhas ao código do ``compose.yml`` para criar uum volume e adicionar persistencia de dados ao PostgreSQL:
+
+```YAML
+services:
+  postgres:
+    container_name: postgres
+    image: postgres:latest
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PW}
+      - POSTGRES_DB=${POSTGRES_DB}
+    ports:
+      - "5432:5432"
+    restart: always
+    volumes: # <-- 
+      - db_data:/var/lib/postgresql/data # <-- 
+
+  pgadmin:
+    container_name: pgadmin
+    image: dpage/pgadmin4:latest
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=${PGADMIN_MAIL}
+      - PGADMIN_DEFAULT_PASSWORD=${PGADMIN_PW}
+    ports:
+      - "5050:80"
+    restart: always
+    
+    depends_on:
+      - postgres # <--
+
+volumes: # <-- 
+  db_data: # <-- 
+```
+* também foi adicionado um ``depends_on`` para garantir que o pgAdmin se conecte ao nome do serviço ``postgres``
+
+## 8.5 Construindo e subindo os containers
+
+* Para subir os containers utilizei a linha de comando:
+
+```BASH
+docker-compose up -d
+```
+
+## 8.6 acessando o pgAdmin:
+
+Após os containers subirem, abri o navegador e entrei no http://localhost:5050 o que deu pra essa tela:
+
+![TELA_LOCALHOST](imagens/exercicio_08_01.png)
+
+* Após entrar com as credenciais que foram modificadas no ``.env`` nos levou pra essa tela aqui:
+
+![TELA_LOGADA_PGADMIN](imagens/exercicio_08_02.png)
+
+## 8.7 Conectando o pgAdmin ao Banco de Dados PostgreSQL:
+
+* o primeiro passo foi clicar na opção ``Add New Server`` e colocar na aba General um nome para um novo banco de dados:
+
+![IMAGEM_GENERAL](imagens/exercicio_08_03.png)
+
+* logo em seguida cliquei na aba ``Conection`` e coloquei o o ``host name`` como ``postgres`` que é o nome que está no ``compose.yml``.
+  * ``Host name`` : postgres
+  * ``Port`` : 5432 que é a porta padrão do PostgreSQL
+  * ``Username`` : o modificado no ``.env``
+  * ``Password`` : o modificdao também no ``.env``
+
+Ficou assim:
+
+![IMAGEM_CONECTION](imagens/exercicio_08_04.png)
+
+## Com a conexão bem sucedida foi só conferir se o banco de dados tinha sido criado
+
+![BANCO_DE_DADOS](imagens/exercicio_08_05.png)
+
+Tudo certo!
+
+---
