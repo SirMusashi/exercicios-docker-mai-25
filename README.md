@@ -388,3 +388,131 @@ docker run -p 8080:8080 --name ping-app go-ping-otimizado
 Tudo certo!
 
 ---
+
+### 7. Crie uma rede Docker personalizada e faça dois containers, um Node.js e um MongoDB, se comunicarem, sugestão, utilize o projeto React Express + Mongo
+
+## 7.1 Clonando o projeto base
+
+* A primeira coisa que fiz foi clonar o repositório base e acessar a pasta específica do projeto com os comandos:
+
+```Bash
+git clone https://github.com/docker/awesome-compose.git
+cd awesome-compose/react-express-mongodb
+```
+
+## 7.2 Analisando o "docker compose"
+
+* Dentro da pasta já havia um ``docker-compose.yml`` e ele estava assim:
+
+```YAML
+version: '3.8'
+
+services:
+  backend:
+    build: ./backend
+    ports:
+      - "3001:3001"
+    environment:
+      MONGO_URI: mongodb://database:27017/mydatabase 
+    depends_on:
+      - database
+  frontend:
+    build: ./frontend
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+  database:
+    image: mongo:latest
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+
+volumes:
+  mongodb_data:
+```
+
+* Estudando um pouco, entendi que o ``Docker Compose`` já cria uma rede padrão para todos os serviços. Mas também descobri que uma boa prática para clareza e controle é adicionar uma rede Explícita.
+
+## 7.3 Adicionando a Rede Explícita ao "docker compose"
+* O primeiro passo foi renomear o antigo arquivo para ``compose.OLD.
+* Após isso criar um novo ``docker-compose.yml`` adicionando algumas informações :
+
+```YAML
+version: '3.8'
+
+services:
+  backend:
+    build: ./backend
+    ports:
+      - "3001:3001"
+    environment:
+      MONGO_URI: mongodb://database:27017/mydatabase 
+    depends_on:
+      - database
+    networks:
+      - app_network 
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    networks:
+      - app_network 
+
+  database:
+    image: mongo:latest
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - app_network 
+
+volumes:
+  mongodb_data:
+
+networks:
+  app_network: 
+    driver: bridge
+    name: minha_rede_customizada 
+```
+
+* Eu adcionei uma seção ``networks:`` ao final, definindo ``app_network`` como uma rede do tipo ``bridge`` e dei um nome para ela. Além disso adicionei em cada serviço a diretiva ``networks:`` apontando para o ``app_network``.
+
+## 7.4 Construindo e subindo os containers
+* Utilizei a seguinte linha de comando para subir os containers:
+```Bash
+docker-compose up --build
+```
+* ``up`` :Cria e inicia os containers.
+* ``--build`` : Faz com que as imagens que vem do ``frontend`` e ``backend`` sejam reconstruiídas caso haja alguma alteração.
+
+## 7.5 Verificando a rede criada
+
+* Para verificar a rede criada utilizei o comando:
+```Bash
+docker network ls
+```
+E ela estava lá:
+
+![REDE_DOCKER](imagens/exercicio_07_01.png)
+
+* Para inspecionar a rede eu utilizei o seguinte comando:
+
+```Bash
+docker network inspect minha_rede_customizada
+```
+* Com isso consigo ver uma seção containers que contem os serviços conectados a rede.
+
+![Containers_conectados](imagens/exercicio_07_02.png)
+
+* Após isso foi só entrar no http://localhost:3000/ e testar a applicação:
+![APLICACAO_FUNCIONANDO](imagens/exercicio_07_03.png)
+
+Tudo certo!
+
+---
