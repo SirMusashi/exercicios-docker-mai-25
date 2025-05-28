@@ -652,7 +652,7 @@ Tudo certo!
 
 ### 9.Construa uma imagem baseada no Nginx ou Apache, adicionando um site HTML/CSS estático. Utilize a landing page do Creative Tim para criar uma página moderna hospedada no container
 
-# 9.1 Primeiros passos
+## 9.1 Primeiros passos
 
 * Primeiro eu clonei o repositório com o comando:
 ```Bash
@@ -742,3 +742,122 @@ A página não estava aparecendo
 
 ---
 
+### 10. Ao rodar containers com o usuário root, você expõe seu sistema a riscos maiores em caso de comprometimento. Neste exercício, você deverá criar um Dockerfile para uma aplicação simples (como um script Python ou um servidor Node.js) e configurar a imagem para rodar com um usuário não-root. Você precisará:
+### a. Criar um usuário com useradd ou adduser no Dockerfile.
+### b. Definir esse usuário como o padrão com a instrução USER.
+### c. Construir a imagem e iniciar o container.
+### d. Verificar se o processo está rodando com o novo usuário usando docker exec container whoami.
+
+
+## 10.1 Primeiros passos
+
+* A primeira coisa que eu fiz foi procurar uma aplicação simples em Node.js já pronta:
+
+  * Conteúdo de ``app.js``:
+
+    ```JavaScript
+          const http = require('http');
+      const { execSync } = require('child_process'); // Importa execSync
+
+      const hostname = '0.0.0.0';
+      const port = 3000;
+
+      const server = http.createServer((req, res) => {
+        res.statusCode = 200;
+        res.setHeader('Content-Type', 'text/plain');
+        res.end('Olá do container Node.js rodando como nao-root!\n');
+      });
+
+      server.listen(port, hostname, () => {
+        console.log(`Servidor rodando em http://${hostname}:${port}/`);
+
+        // Tentar obter o nome do usuário de forma mais confiável
+        let currentUser = 'desconhecido';
+        try {
+          currentUser = execSync('whoami', { encoding: 'utf-8' }).trim();
+        } catch (error) {
+          // console.error("Erro ao obter nome do usuário:", error.message);
+        }
+        console.log(`Processo rodando como usuário: ${currentUser}`);
+      });
+      ```
+  * Conteúdo de ``package.json`` :
+    
+    ```JSON
+    {
+      "name": "simple-node-app",
+      "version": "1.0.0",
+      "description": "A simple Node.js app to demonstrate non-root user in Docker",
+      "main": "app.js",
+      "scripts": {
+        "start": "node app.js"
+      },
+      "keywords": [],
+      "author": "",
+      "license": "ISC"
+    }
+    ```
+
+
+* Após isso feito, o próximo passo foi configurar um ``Dockerfile``:
+
+```Dockerfile       
+FROM node:lts-alpine
+
+RUN addgroup -S appgroup && adduser -S bruno -G appgroup
+
+WORKDIR /usr/src/app
+
+COPY package*.json ./
+
+RUN npm install
+
+COPY . .
+
+RUN chown -R bruno:appgroup /usr/src/app
+
+USER bruno
+
+EXPOSE 3000
+
+CMD [ "npm", "start" ]
+```
+
+  * ``RUN addgroup -S appgroup && adduser -S bruno -G appgroup`` : Cria um grupo de sistema chamado ``appgroup`` e também cria um usuário de sistema chamado ``bruno``, além de o adicionar ao ``appgroup``.
+  * ``RUN chown -R appuser:appgroup /usr/src/app`` : O ``chown`` aqui serve para alterar com o ``-R`` recursivamente o proprietário das copias para o usuário e o ``appgroup``.
+
+
+
+## 10.2 Construindo a imagem e iniciando o container:
+
+* Para construir a imagem:
+  ```Bash
+  docker build -t app-nao-root .
+  ```
+
+* Iniciando o container:
+  ```bash
+  docker run -d -p 3000:3000 --name container-nao-root app-nao-root
+  ```
+
+## 10.3 Verificando se está tudo certo
+
+* Primeiro passo foi executar o ``whoami`` :
+
+  ```bash
+  docker exec container-nao-root whoami
+  ```
+
+    ![WHOAMI](imagens/exercicio_10_01.png)
+
+* O segundo foi conferir os logs do container:
+
+  ```bash
+  docker logs container-nao-root
+  ```
+
+    ![LOGS](imagens/exercicio_10_02.png)
+
+## Tudo certo (:
+
+### 11.

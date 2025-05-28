@@ -1,0 +1,12 @@
+{
+  "name": "simple-node-app",
+  "version": "1.0.0",
+  "description": "A simple Node.js app to demonstrate non-root user in Docker",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}
