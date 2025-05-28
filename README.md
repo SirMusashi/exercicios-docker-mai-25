@@ -649,3 +649,96 @@ Ficou assim:
 Tudo certo!
 
 ---
+
+### 9.Construa uma imagem baseada no Nginx ou Apache, adicionando um site HTML/CSS estático. Utilize a landing page do Creative Tim para criar uma página moderna hospedada no container
+
+# 9.1 Primeiros passos
+
+* Primeiro eu clonei o repositório com o comando:
+```Bash
+git clone https://github.com/creativetimofficial/material-kit.git material-kit-html
+```
+* Após isso criei um ``Dockerfile`` com a seguinte configuração:
+
+  ```Dockerfile
+  FROM nginx:1.27.5
+
+  RUN rm -rf /etc/nginx/conf.d/*
+
+  COPY ./material-kit-html /usr/share/nginx/html
+
+  EXPOSE 80
+
+  CMD ["nginx", "-g", "daemon off;"]
+  ```
+  * ``RUN rm -rf /etc/nginx/conf.d/*`` : Limpa as configurações padrão do ``Nginx`` para evitar conflitos ou servir páginas não desejadas.
+  * ``COPY . /usr/share/nginx/html`` : Copia todo o conteúdo clonado para o diretório padrão aonde o ``Nginx`` procura encontrar os arquivos do site.
+  * ``CMD ["nginx", "-g", "daemon off;"]`` : Define o container para iniciar o servidor ``Nginx`` em primeiro plano.
+
+## 9.2 Construindo a imagem e rodando o container
+
+* Para construir a imagem eu utilizei a linha de comando:
+  ```Bash
+  docker build -t meu-site-material-kit .
+  ```
+
+* Após isso coloquei o container para rodar com o comando:
+  ```Bash
+  docker run -d -p 80:80 --name material-kit-site meu-site-material-kit
+  ```
+
+## 9.3 Passos finais
+
+* Após isso foi conferir se o container estava rodando no ``Rancher Desktop``
+
+  ![CONTAINER_RODANDO](imagens/exercicio_09_01.png)
+
+* Com tudo certo foi só abrir o navegador em http://localhost e conferir o resultado:
+
+  ![LOCALHOST_RODANDO](imagens/exercicio_09_02.png)
+
+A página não estava aparecendo
+
+## 9.4 Resolução
+
+* Após quebrar um pouco a cabeça descobri ao utilizar o comando ``RUN rm -rf /etc/nginx/conf.d/*`` no ``Dockerfile`` , ele removeu todos os arquivos de configuração incluindo o arquivo ``default.conf`` que serve para servir a porta ``80`` do Nginx, a solução foi criar um arquivo separado e incluir um ``COPY`` no ``Dockerfile``, e mover o mesmo para a pasta raiz do exercício para resolução:
+
+  * ``default.conf`` ficou assim:
+    
+    ```Nginx
+    server {
+      listen 80; 
+      server_name localhost;
+
+      root /usr/share/nginx/html; 
+      index index.html index.htm; 
+
+      location / {
+        try_files $uri $uri/ =404; 
+      }
+    }
+    ```
+  * Como o ``Dockerfile`` mudou de pasta , isso exigiu modificações para que ficasse assim:
+
+    ```Dockerfile      
+      FROM nginx:1.27.5
+
+      RUN rm -rf /etc/nginx/conf.d/*
+
+      COPY ./nginx/default.conf /etc/nginx/conf.d/default.conf 
+
+      COPY ./material-kit-html /usr/share/nginx/html
+
+      EXPOSE 80
+
+      CMD ["nginx", "-g", "daemon off;"]
+    ```
+
+* Após isso foi só fazer a build da imagem novamente e colocar o container pra rodar e o resultado foi esse:
+  ![CORRIGIDO](imagens/exercicio_09_03.png)
+
+
+### Tudo certo agora! :)
+
+---
+
