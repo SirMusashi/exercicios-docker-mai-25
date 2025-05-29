@@ -860,4 +860,146 @@ CMD [ "npm", "start" ]
 
 ## Tudo certo (:
 
-### 11.
+### 11. Trivy é uma ferramenta open source para análise de vulnerabilidades em imagens Docker. Neste exercício, você irá analisar uma imagem pública, como python:3.9 ou node:16, em busca de vulnerabilidades conhecidas. Você deverá:
+### a. Instalar o Trivy na sua máquina (via script ou pacote).
+
+### b. Rodar trivy image <nome-da-imagem> para analisar.
+
+### c. Identificar vulnerabilidades com severidade HIGH ou CRITICAL.
+
+### d. Anotar os pacotes ou bibliotecas afetadas e sugerir possíveis ações (como atualização da imagem base ou substituição de dependências).
+
+## 11.1 Primeiros passos
+
+* O primeiro passo foi instalar o ``Trivy`` via terminal com o comando:
+
+```bash
+winget install AquaSecurity.Trivy
+```
+* Em seguida reiniciar o terminal e para confirmar a instalação utilizar o comando:
+
+```bash
+trivy --version
+```
+
+``RESULTADO`` : ![TRIVY_INSTALADO](imagens/exercicio_11_01.png)
+
+## 11.2 Analisando a imagem do python:3.9
+
+* Aqui o primeiro passo foi utilizar o comando:
+
+```bash
+trivy image python:3.9
+```
+
+Assim o ``Trivy`` vai baixar os bancos de dados de vulnerabilidades e em seguida vai escanear a imagem.
+
+``Resultado: `` ![RESULTADO_TRIVY](imagens/exercicio_11_02.png)
+
+* 3 vulnerabilidades com severidade ``HIGH`` foram encontradas.
+
+## 11.3 Sugestões de possíveis melhorias
+
+* O ideal, caso essa imagem esteja sendo usada em um container do Docker seria atualizar a imagem para uma versão mais segura/estável.
+* Caso a etapa anterior não seja viável o ideal seria atualizar o ``setuptools`` para uma versão mais recente e mais estável, já que é aonde a maioria das vulnerabilidades com severidade ``HIGH`` se encontra.
+* Atualizar a versão do ``pip`` também seria uma boa ideia e sanaria a vulnerabilidade de severidade ``MEDIUM``.
+* Revisão contínua, como implementar um processo de escaneamento de vulnerabilidade no pipeline de CI/CD para detectar e remediar problemas precocemente.
+
+---
+
+### 12.Após identificar vulnerabilidades com ferramentas como o Trivy, o próximo passo é corrigi-las. Imagens grandes e genéricas frequentemente trazem bibliotecas desnecessárias e vulneráveis, além de usarem o usuário root por padrão. Neste exercício, você irá trabalhar com um exemplo de Dockerfile com más práticas e aplicar melhorias para construir uma imagem mais segura e enxuta. Identifique as melhorias e gere uma nova versão de Dockerfile.
+
+### Dockerfile vulnerável: 
+```Dockerfile
+FROM python:3.9
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install -r requirements.txt
+COPY . .
+CMD ["python", "app.py"]
+```
+
+### requeriments.txt
+```TXT
+flask==1.1.1
+```
+### app.py
+```python
+from flask import Flask 
+app = Flask(__name__) 
+@app.route("/") 
+def hello_world(): 
+  return "<p>Hello, World!</p>"
+```
+---
+
+## 12.1 Problemas e melhorias
+
+1 - ``FROM python:3.9`` :
+  * ``Problema`` : A imagem é grande e genérica, baseada em um sistema operacional completo, inclui muitas bibiliotecas e ferramentas que não são necessárias para executar uma aplicação ``Flask`` simples.
+  * ``Melhoria`` : Usar uma imagem ``slim`` ou ``alpine`` para reduzir o tamanho da imagem e a superfício de ataque.
+
+2 - `` RUN pip install -r requirements.txt`` :
+  * ``Problema`` : Este comando instala as dependências, mas se o ``pip cache`` não for limpo o tamanho da imagem final pode ficar comprometido.
+  * ``Melhoria`` : Adicionar uma flas ``--no-cache-dir`` para o ``pip install`` para evitar que o cache dos pacotes seja armazenado na imagem.
+
+3 - ``COPY . .`` :
+  * ``Problema`` : Copia todo o conteúdo do diretório para a imagem, incluindo arquivos que não são necessários para a aplicação.
+  * ``Melhoria`` : Usar um arquivo ``.dockerignore`` para excluir arquivos e diretórios desnecessários. Além de copiar apenas arquivos necessário para a aplicação.
+
+4 - Execução com ``root`` :
+  * ``Problema`` : Isso é uma má prática de segurança, pois se houver vulnerabilidade na aplicação, o atacante tem acesso total ao sistema de arquivos do container e pode até conseguir acesso ao host.
+  * ``Melhoria`` : Criar um usuário ``não root`` e executar a aplicação com esse usuário.
+
+5 - ``Multi-stage builds`` :
+  * ``Problema`` : Para aplicações maiores ou com dependências de compilação, um único estágio pode levar a imagens com tamanho grande.
+  * ``Melhoria`` : implementar o ``Multi-stage`` para usar uma imagem de construção com as ferramenas de compilação e, em seguida, copiar apenas os artefatos compilados para uma imagem de execução limpa e mínima.
+
+## 12.2 Dockerfile melhorado:
+
+* Após as considerações e propostas de melhorias o dockerfile ficou assim:
+
+```Dockerfile
+FROM python:3.9.18-slim-buster AS builder
+
+WORKDIR /app
+
+COPY requirements.txt .
+
+RUN pip install --no-cache-dir -r requirements.txt
+
+FROM python:3.9.18-slim-buster
+
+WORKDIR /app
+
+COPY --from=builder /usr/local/lib/python3.9/site-packages /usr/local/lib/python3.9/site-packages
+
+COPY --from=builder /usr/local/bin/flask /usr/local/bin/flask
+
+COPY app.py .
+
+RUN addgroup --system appgroup && adduser --system --ingroup appgroup appuser
+
+USER appuser
+
+EXPOSE 5000
+
+CMD ["python", "app.py"]
+```
+
+* Foi também implemetado a pasta do projeto um arquivo ``.dockerignore`` que ficou assim:
+
+```dockerignore
+.git
+.gitignore
+__pycache__
+*.pyc
+*.log
+.DS_Store
+venv/
+env/
+```
+
+### Assim a aplicação ficou com a construção mais rápida, tamanho reduzido e muito mais segura (:
+
+---
