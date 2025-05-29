@@ -960,7 +960,7 @@ def hello_world():
 * Após as considerações e propostas de melhorias o dockerfile ficou assim:
 
 ```Dockerfile
-FROM python:3.9.18-slim-buster AS builder
+FROM python:3.9-slim-buster AS builder
 
 WORKDIR /app
 
@@ -968,23 +968,22 @@ COPY requirements.txt .
 
 RUN pip install --no-cache-dir -r requirements.txt
 
-FROM python:3.9.18-slim-buster
+FROM python:3.9-slim-buster
 
 WORKDIR /app
 
 COPY --from=builder /usr/local/lib/python3.9/site-packages /usr/local/lib/python3.9/site-packages
-
 COPY --from=builder /usr/local/bin/flask /usr/local/bin/flask
+COPY --from=builder /usr/local/bin/gunicorn /usr/local/bin/gunicorn
 
 COPY app.py .
 
 RUN addgroup --system appgroup && adduser --system --ingroup appgroup appuser
-
 USER appuser
 
 EXPOSE 5000
 
-CMD ["python", "app.py"]
+CMD ["gunicorn", "--bind", "0.0.0.0:5000", "app:app"] 
 ```
 
 * Foi também implemetado a pasta do projeto um arquivo ``.dockerignore`` que ficou assim:
@@ -999,6 +998,8 @@ __pycache__
 venv/
 env/
 ```
+
+* Foi adicionado o ``Gunicorn`` ao ``requirements.txt``
 
 ### RESULTADO:
 ![IMAGEM](imagens/exercicio_11_03.png)
