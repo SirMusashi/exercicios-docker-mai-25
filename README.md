@@ -1000,6 +1000,10 @@ venv/
 env/
 ```
 
+### RESULTADO:
+![IMAGEM](imagens/exercicio_11_03.png)
+
+![IMAGEM_2](imagens/exercicio_11_04.png)
 ### Assim a aplicação ficou com a construção mais rápida, tamanho reduzido e muito mais segura (:
 
 ---
