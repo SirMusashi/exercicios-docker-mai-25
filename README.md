@@ -1008,3 +1008,87 @@ env/
 ### Assim a aplicação ficou com a construção mais rápida, tamanho reduzido e muito mais segura (:
 
 ---
+
+
+### 13.Crie um Dockerfile que use a imagem python:3.11-slim, copie um script Python local (app.py) e o execute com CMD. O script pode imprimir a data e hora atual.
+
+### a. Crie uma conta no Docker Hub.
+
+### b. Faça login pelo terminal com docker login.
+
+### c. Rebuild sua imagem meu-echo e a renomeie no formato seu-usuario/meu-echo:v1.
+
+### d. Faça o push da imagem para o Docker Hub.
+
+---
+
+## 13.1 Primeiros passos
+
+* Criando a conta no ``Docker Hub`` :
+
+  * Acessar o https://hub.docker.com/ e clicar em sign up ou sign in(caso você já tenha conta) :
+    ![Dockerhub](imagens/exercicio_13_01.png)
+
+* Com a conta criada para fazer login pelo terminal digite:
+  ```Bash
+  docker login
+  ```
+
+    ![DOCKERLOGIN](imagens/exercicio_13_02.png)
+
+* Preparar os arquivos para fazer um build de imagem
+  * O primeiro passo foi criar um arquivo chamado ``app.py`` na pasta raiz com o seguinte conteúdo:
+    ```Python
+    import datetime
+
+    def main():
+    print(f"A data e hora atual é: {datetime.datetime.now()}")
+
+    if __name__ == "__main__":
+        main()  
+    ```
+  * Em seguida criar o ``Dockerfile`` também na pasta raiz:
+
+    ```Dockerfile    
+    FROM python:3.11-slim
+
+    WORKDIR /app
+
+    COPY app.py .
+
+    CMD ["python", "app.py"]
+    ```
+
+* Após isso foi buildar a imagem pela primeira vez:
+  ```Bash
+  docker build -t meu-echo .
+  ```
+
+## 13.2 Rebuild e push para o docker hub
+
+* Para Rebuildar a imagem utilizei o meu ``nome de usuário`` e adicionei o numero da versão do container:
+  ```Bash
+  docker tag meu-echo brunomusashiduarte/meu-echo:v1
+  ```
+  * utilizando o ``docker images`` se consegue ver o resultado
+    ![resultado_images](imagens/exercicio_13_03.png)
+
+* Rodando o container com o comando:
+  ```Bash
+  docker run brunomusashiduarte/meu-echo:v1
+  ```
+    ![container_rodando](imagens/exercicio_13_04.png)
+
+* Após confirmar a funcionalidade do container é só usar o comando push para subir para o ``Docker hub``:
+  	```Bash
+    docker push brunomusashiduarte/meu-echo:v1
+    ```
+
+### RESULTADO :
+![docker_hub_01](imagens/exercicio_13_05.png)
+
+![docker_hub_01](imagens/exercicio_13_06.png)
+
+## Tudo certo (:
+
+## Esse foi o fim dos 13 exercícios propostos pelo programa Scholarship da Compass UOL!
